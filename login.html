@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 · 学习笔记</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      max-width: 400px;
+      margin: 3rem auto;
+      padding: 0 1rem;
+      color: #1a1a1a;
+      background: #f5f5f4;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .sub { font-size: 0.875rem; color: #57534e; margin-bottom: 1.5rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.35rem; color: #444; }
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      margin-bottom: 0.85rem;
+    }
+    input:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+      border-color: #2563eb;
+    }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
+    button {
+      padding: 0.55rem 1.1rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button.primary { color: #fff; background: #2563eb; }
+    button.primary:hover { background: #1d4ed8; }
+    button.secondary {
+      color: #44403c;
+      background: #e7e5e4;
+      border: 1px solid #d6d3d1;
+    }
+    button.secondary:hover { background: #d6d3d1; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    #msg { margin-top: 1rem; font-size: 0.875rem; min-height: 1.25rem; white-space: pre-line; }
+    #msg.error { color: #b91c1c; }
+    #msg.ok { color: #15803d; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>学习笔记</h1>
+  <p class="sub">使用邮箱和密码登录；没有账号可先注册。</p>
+
+  <form id="auth-form" autocomplete="on">
+    <label for="email">邮箱</label>
+    <input type="email" id="email" name="email" required autocomplete="email" />
+
+    <label for="password">密码（至少 6 位）</label>
+    <input type="password" id="password" name="password" required minlength="6" autocomplete="current-password" />
+
+    <div class="row">
+      <button type="submit" class="primary" id="btn-login">登录</button>
+      <button type="button" class="secondary" id="btn-signup">注册</button>
+    </div>
+    <p id="msg" role="status" aria-live="polite"></p>
+  </form>
+
+  <p style="margin-top:1.5rem;font-size:0.8125rem;color:#78716c;">
+    注册后请前往邮箱（含垃圾箱）查收邮件，点击其中的确认链接后再登录。若点击链接后报错，请到 Supabase
+    → Authentication → URL Configuration → Redirect URLs，加入你本地或线上访问本页的完整地址（例如
+    <code style="font-size:0.75rem">http://127.0.0.1:5500/login.html</code>）。
+  </p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = "https://tteagpayufnbxbvynceu.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_0QMAiTeU7KOBMvoJgo1ZDg_ERG9r6IJ";
+
+    const msg = document.getElementById("msg");
+    const emailEl = document.getElementById("email");
+    const passwordEl = document.getElementById("password");
+    const btnLogin = document.getElementById("btn-login");
+    const btnSignup = document.getElementById("btn-signup");
+
+    function setMsg(text, kind) {
+      msg.textContent = text || "";
+      msg.className = kind || "";
+    }
+
+    /** 把 Supabase 英文错误转成面向用户的说明 */
+    function formatAuthError(err) {
+      const raw = err && (err.message || err.msg) ? String(err.message || err.msg) : String(err);
+      const lower = raw.toLowerCase();
+      if (lower.includes("email not confirmed")) {
+        return (
+          "该邮箱尚未完成确认，暂时无法登录。\n\n" +
+          "请打开你注册时填写的邮箱，在收件箱或垃圾箱中查找确认邮件，点击邮件里的确认链接；完成后再回到此处登录。"
+        );
+      }
+      return raw;
+    }
+
+    if (typeof supabase === "undefined" || !supabase.createClient) {
+      setMsg("无法加载 Supabase 脚本，请检查网络。", "error");
+    }
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    (async function bootstrapAuthUrl() {
+      const authUrl = new URL(window.location.href);
+      const qErr = authUrl.searchParams.get("error");
+      const qErrDesc = authUrl.searchParams.get("error_description");
+      if (qErr) {
+        const detail = qErrDesc
+          ? decodeURIComponent(qErrDesc.replace(/\+/g, " "))
+          : qErr;
+        setMsg("确认链接无效或已过期：" + detail + " 请重新注册或登录。", "error");
+        authUrl.search = "";
+        window.history.replaceState({}, document.title, authUrl.pathname + authUrl.hash);
+        return;
+      }
+      if (authUrl.searchParams.get("code")) {
+        setMsg("正在完成邮箱确认…", "");
+        const { error: codeErr } = await client.auth.exchangeCodeForSession(
+          window.location.href
+        );
+        if (codeErr) {
+          setMsg(
+            "邮箱确认失败：" +
+              (codeErr.message || String(codeErr)) +
+              "\n\n请在 Supabase → Authentication → URL Configuration → Redirect URLs 中，添加你当前打开本页使用的完整地址（含端口），保存后再次点击邮件中的确认链接。",
+            "error"
+          );
+          authUrl.search = "";
+          window.history.replaceState({}, document.title, authUrl.pathname + authUrl.hash);
+          return;
+        }
+        window.location.replace("index.html");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+      if (session) {
+        window.location.replace("index.html");
+      }
+    })();
+
+    function setBusy(b) {
+      btnLogin.disabled = b;
+      btnSignup.disabled = b;
+    }
+
+    document.getElementById("auth-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      setMsg("", "");
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+      if (!email || password.length < 6) {
+        setMsg("请填写有效邮箱与至少 6 位密码。", "error");
+        return;
+      }
+      setBusy(true);
+      try {
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        window.location.replace("index.html");
+      } catch (err) {
+        console.error(err);
+        setMsg(formatAuthError(err), "error");
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    btnSignup.addEventListener("click", async function () {
+      setMsg("", "");
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+      if (!email || password.length < 6) {
+        setMsg("请填写有效邮箱与至少 6 位密码。", "error");
+        return;
+      }
+      setBusy(true);
+      try {
+        const { data, error } = await client.auth.signUp({ email, password });
+        if (error) throw error;
+        if (data.session) {
+          window.location.replace("index.html");
+        } else {
+          setMsg("注册成功。请前往邮箱查收确认邮件（含垃圾箱），点击邮件中的确认链接后再登录。", "ok");
+        }
+      } catch (err) {
+        console.error(err);
+        setMsg(formatAuthError(err), "error");
+      } finally {
+        setBusy(false);
+      }
+    });
+  </script>
+</body>
+</html>
