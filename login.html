@@ -194,7 +194,13 @@
       }
       setBusy(true);
       try {
-        const { data, error } = await client.auth.signUp({ email, password });
+        /** 确认邮件里的「确认后打开」地址；必须与 Supabase → Redirect URLs 里允许的地址一致 */
+        const emailRedirectTo = new URL("login.html", window.location.href).href;
+        const { data, error } = await client.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo },
+        });
         if (error) throw error;
         if (data.session) {
           window.location.replace("index.html");
