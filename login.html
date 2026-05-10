@@ -58,7 +58,7 @@
 </head>
 <body>
   <h1>学习笔记</h1>
-  <p class="sub">使用邮箱和密码登录；没有账号可先注册。</p>
+  <p class="sub">任何人可用邮箱<strong>免费注册</strong>；登录后笔记仅保存在你的账号下，与他人<strong>完全隔离</strong>。已有账号请直接登录。</p>
 
   <form id="auth-form" autocomplete="on">
     <label for="email">邮箱</label>
@@ -105,6 +105,29 @@
         return (
           "该邮箱尚未完成确认，暂时无法登录。\n\n" +
           "请打开你注册时填写的邮箱，在收件箱或垃圾箱中查找确认邮件，点击邮件里的确认链接；完成后再回到此处登录。"
+        );
+      }
+      if (
+        lower.includes("rate limit") ||
+        lower.includes("over_email_send_rate_limit") ||
+        lower.includes("email rate limit")
+      ) {
+        return (
+          "发送确认邮件过于频繁，已达到 Supabase 对邮箱发送的限制。\n\n" +
+          "请等待一段时间（常见为约 1 小时）后再试；调试期间尽量不要反复点「注册」。\n\n" +
+          "若急需继续测试：可在 Supabase → Authentication → Users 中手动确认用户，或在 Providers → Email 中暂时关闭「Confirm email」（仅供开发环境）。"
+        );
+      }
+      if (
+        lower.includes("signups not allowed") ||
+        lower.includes("signup not allowed") ||
+        lower.includes("signup_disabled") ||
+        lower.includes("email signups are disabled") ||
+        lower.includes("sign up is disabled")
+      ) {
+        return (
+          "当前未开放自助注册：请在 Supabase 控制台打开「允许新用户注册」。\n\n" +
+          "路径一般为：左侧 Authentication → 打开 **Users** 或项目 **Settings（齿轮）→ Authentication**，找到类似「Allow new users to sign up / Enable email signup」的开关并开启；若曾关闭「Enable Email Signup」，也需一并打开。保存后让别人再点「注册」即可。"
         );
       }
       return raw;

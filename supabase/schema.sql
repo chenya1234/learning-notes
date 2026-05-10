@@ -36,6 +36,9 @@ comment on column public.learning_notes.user_id is '所属用户；插入时默�
 create index if not exists learning_notes_tags_gin
   on public.learning_notes using gin (tags);
 
+create index if not exists learning_notes_user_id_created_at_idx
+  on public.learning_notes (user_id, created_at desc);
+
 drop policy if exists "learning_notes_select_anon" on public.learning_notes;
 drop policy if exists "learning_notes_insert_anon" on public.learning_notes;
 drop policy if exists "learning_notes_select_own" on public.learning_notes;

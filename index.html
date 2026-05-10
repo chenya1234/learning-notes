@@ -186,6 +186,20 @@
       background: #fff;
       min-width: 8rem;
     }
+    #note-search {
+      flex: 1;
+      min-width: 10rem;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.875rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 6px;
+      background: #fff;
+    }
+    #note-search:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+      border-color: #2563eb;
+    }
     .tag-row {
       display: flex;
       flex-wrap: wrap;
@@ -249,6 +263,13 @@
       background: #d6d3d1;
       color: #1c1917;
     }
+    .privacy-hint {
+      font-size: 0.75rem;
+      color: #78716c;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: #e7e5e4;
+    }
   </style>
 </head>
 <body>
@@ -259,6 +280,7 @@
     <h1>今天学了什么</h1>
     <div class="user-meta">
       <span id="user-email"></span>
+      <span class="privacy-hint" title="数据库按账号隔离，他人无法查看你的笔记">仅本人可见</span>
       <button type="button" id="logout-btn">退出登录</button>
     </div>
   </div>
@@ -290,6 +312,16 @@
       <label for="tag-filter">按标签筛选</label>
       <select id="tag-filter" aria-label="按标签筛选历史记录"></select>
     </div>
+    <div class="filter-row">
+      <label for="note-search">搜索内容</label>
+      <input
+        type="search"
+        id="note-search"
+        placeholder="输入关键词，实时筛选当前列表…"
+        autocomplete="off"
+        aria-label="按笔记正文关键词筛选"
+      />
+    </div>
     <p class="empty" id="empty-hint">还没有记录，写一条试试吧。</p>
     <ul id="history-list" hidden></ul>
   </section>
@@ -317,6 +349,10 @@
     const refreshBtn = document.getElementById("refresh-btn");
     const tagCheckboxesHost = document.getElementById("tag-checkboxes");
     const tagFilter = document.getElementById("tag-filter");
+    const noteSearch = document.getElementById("note-search");
+
+    /** 当前标签条件下从服务端拉取的完整列表；搜索在此基础上实时过滤 */
+    let notesCache = [];
 
     /** 可选标签列表：与数据库里存的字符串一致；要增删改只改这里并在 Supabase 里存对应文字即可 */
     const TAG_OPTIONS = ["前端", "数据库", "报错解决"];
@@ -473,7 +509,18 @@
     }
 
     async function insertNote(text, tags) {
-      const payload = { text: text, tags: tags.length ? tags : [] };
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabaseClient.auth.getUser();
+      if (userErr || !user) {
+        throw userErr || new Error("未登录或会话已失效，请重新登录。");
+      }
+      const payload = {
+        text: text,
+        tags: tags.length ? tags : [],
+        user_id: user.id,
+      };
       const { error } = await supabaseClient.from("learning_notes").insert(payload);
       if (error) throw error;
     }
@@ -488,25 +535,49 @@
       window.location.replace("login.html");
     }
 
+    function updateDisplayFromCache() {
+      const q = noteSearch.value.trim();
+      let displayed = notesCache;
+      if (q) {
+        const lower = q.toLowerCase();
+        displayed = notesCache.filter(function (n) {
+          return (n.text || "").toLowerCase().indexOf(lower) !== -1;
+        });
+      }
+
+      const filterTag = tagFilter.value.trim();
+      if (notesCache.length === 0) {
+        emptyHint.textContent = filterTag
+          ? "该标签下还没有笔记，换一个筛选或新增一条吧。"
+          : "还没有记录，写一条试试吧。";
+      } else if (displayed.length === 0) {
+        emptyHint.textContent =
+          "没有与关键词匹配的笔记，换个词或清空搜索框试试。";
+      }
+
+      render(displayed);
+    }
+
     async function refreshList() {
       setStatus("加载中…", "");
       submitBtn.disabled = true;
       refreshBtn.disabled = true;
+      noteSearch.disabled = true;
       try {
         const filterTag = tagFilter.value.trim() || null;
         const notes = await fetchNotesFromSupabase(filterTag);
-        emptyHint.textContent = filterTag
-          ? "该标签下还没有笔记，换一个筛选或新增一条吧。"
-          : "还没有记录，写一条试试吧。";
-        render(notes);
+        notesCache = notes;
+        updateDisplayFromCache();
         setStatus("", "");
       } catch (err) {
         console.error(err);
         setStatus("读取失败：" + (err.message || String(err)), "error");
-        render([]);
+        notesCache = [];
+        updateDisplayFromCache();
       } finally {
         submitBtn.disabled = false;
         refreshBtn.disabled = false;
+        noteSearch.disabled = false;
       }
     }
 
@@ -521,6 +592,11 @@
     tagFilter.addEventListener("change", function () {
       if (!isConfigReady() || !supabaseClient) return;
       refreshList();
+    });
+
+    noteSearch.addEventListener("input", function () {
+      if (!isConfigReady() || !supabaseClient) return;
+      updateDisplayFromCache();
     });
 
     form.addEventListener("submit", async function (e) {
