@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>学习笔记</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      max-width: 560px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      color: #1a1a1a;
+      background: #f5f5f4;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: #444;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 0.75rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 8px;
+      font-size: 1rem;
+      resize: vertical;
+      background: #fff;
+    }
+    textarea:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+      border-color: #2563eb;
+    }
+    button {
+      margin-top: 0.75rem;
+      padding: 0.6rem 1.25rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #fff;
+      background: #2563eb;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    section {
+      margin-top: 2rem;
+    }
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .history-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+      color: #57534e;
+    }
+    #refresh-btn {
+      margin: 0;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #44403c;
+      background: #e7e5e4;
+      border: 1px solid #d6d3d1;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #refresh-btn:hover:not(:disabled) {
+      background: #d6d3d1;
+      color: #1c1917;
+    }
+    .empty {
+      color: #78716c;
+      font-size: 0.9375rem;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      background: #fff;
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      margin-bottom: 0.625rem;
+    }
+    li time {
+      display: block;
+      font-size: 0.75rem;
+      color: #78716c;
+      margin-bottom: 0.35rem;
+    }
+    li p {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #status {
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+      min-height: 1.25rem;
+    }
+    #status.error {
+      color: #b91c1c;
+    }
+    #status.ok {
+      color: #15803d;
+    }
+    .tag-fieldset {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 8px;
+      background: #fafaf9;
+    }
+    .tag-fieldset legend {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #444;
+      padding: 0 0.35rem;
+    }
+    .tag-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+    }
+    .tag-checkboxes label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0;
+      font-weight: 400;
+      font-size: 0.9375rem;
+      cursor: pointer;
+    }
+    .tag-checkboxes input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #2563eb;
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .filter-row label {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #57534e;
+    }
+    #tag-filter {
+      padding: 0.4rem 0.65rem;
+      font-size: 0.875rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 6px;
+      background: #fff;
+      min-width: 8rem;
+    }
+    #note-search {
+      flex: 1;
+      min-width: 10rem;
+      padding: 0.4rem 0.65rem;
+      font-size: 0.875rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 6px;
+      background: #fff;
+    }
+    #note-search:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+      border-color: #2563eb;
+    }
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 0.4rem;
+    }
+    .tag-chip {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+    .tag-chip.muted {
+      background: #f5f5f4;
+      color: #78716c;
+      font-weight: 400;
+    }
+    #boot {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #57534e;
+      font-size: 0.9375rem;
+    }
+    #app[hidden] {
+      display: none !important;
+    }
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .top-bar h1 {
+      margin: 0;
+    }
+    .user-meta {
+      font-size: 0.8125rem;
+      color: #57534e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .nav-home {
+      color: #78716c;
+      text-decoration: none;
+      font-weight: 500;
+      margin-right: 0.25rem;
+    }
+    .nav-home:hover {
+      color: #1c1917;
+    }
+    #logout-btn {
+      margin: 0;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #44403c;
+      background: #e7e5e4;
+      border: 1px solid #d6d3d1;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #logout-btn:hover {
+      background: #d6d3d1;
+      color: #1c1917;
+    }
+    .privacy-hint {
+      font-size: 0.75rem;
+      color: #78716c;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: #e7e5e4;
+    }
+  </style>
+</head>
+<body>
+  <div id="boot">正在验证登录…</div>
+
+  <div id="app" hidden>
+  <div class="top-bar">
+    <h1>今天学了什么</h1>
+    <div class="user-meta">
+      <a href="index.html" class="nav-home" id="nav-home">首页</a>
+      <span id="user-email"></span>
+      <span class="privacy-hint" title="数据库按账号隔离，他人无法查看你的笔记">仅本人可见</span>
+      <button type="button" id="logout-btn">退出登录</button>
+    </div>
+  </div>
+
+  <form id="note-form">
+    <label for="note-input">笔记内容</label>
+    <textarea
+      id="note-input"
+      name="note"
+      placeholder="例如：学会了 HTML 里的 form 和 button…"
+      autocomplete="off"
+    ></textarea>
+
+    <fieldset class="tag-fieldset">
+      <legend>标签（可多选）</legend>
+      <div class="tag-checkboxes" id="tag-checkboxes" aria-label="笔记标签"></div>
+    </fieldset>
+
+    <button type="submit" id="submit-btn">提交</button>
+    <p id="status" role="status" aria-live="polite"></p>
+  </form>
+
+  <section aria-labelledby="history-heading">
+    <div class="history-header">
+      <h2 id="history-heading">历史记录</h2>
+      <button type="button" id="refresh-btn" title="从 Supabase 重新加载">刷新列表</button>
+    </div>
+    <div class="filter-row">
+      <label for="tag-filter">按标签筛选</label>
+      <select id="tag-filter" aria-label="按标签筛选历史记录"></select>
+    </div>
+    <div class="filter-row">
+      <label for="note-search">搜索内容</label>
+      <input
+        type="search"
+        id="note-search"
+        placeholder="输入关键词，实时筛选当前列表…"
+        autocomplete="off"
+        aria-label="按笔记正文关键词筛选"
+      />
+    </div>
+    <p class="empty" id="empty-hint">还没有记录，写一条试试吧。</p>
+    <ul id="history-list" hidden></ul>
+  </section>
+  </div>
+
+  <!-- Supabase 官方 JS 客户端（通过 CDN 加载，无需 npm） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    // ========== 第 1 步：把下面两项换成你在 Supabase 项目里复制的值 ==========
+    const SUPABASE_URL = "https://tteagpayufnbxbvynceu.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_0QMAiTeU7KOBMvoJgo1ZDg_ERG9r6IJ";
+
+    const bootEl = document.getElementById("boot");
+    const appEl = document.getElementById("app");
+    const userEmailEl = document.getElementById("user-email");
+    const logoutBtn = document.getElementById("logout-btn");
+
+    const form = document.getElementById("note-form");
+    const input = document.getElementById("note-input");
+    const submitBtn = document.getElementById("submit-btn");
+    const list = document.getElementById("history-list");
+    const emptyHint = document.getElementById("empty-hint");
+    const statusEl = document.getElementById("status");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const tagCheckboxesHost = document.getElementById("tag-checkboxes");
+    const tagFilter = document.getElementById("tag-filter");
+    const noteSearch = document.getElementById("note-search");
+
+    /** 当前标签条件下从服务端拉取的完整列表；搜索在此基础上实时过滤 */
+    let notesCache = [];
+
+    /** 可选标签列表：与数据库里存的字符串一致；要增删改只改这里并在 Supabase 里存对应文字即可 */
+    const TAG_OPTIONS = ["前端", "数据库", "报错解决"];
+
+    function buildTagFilterOptions() {
+      tagFilter.innerHTML = "";
+      const allOpt = document.createElement("option");
+      allOpt.value = "";
+      allOpt.textContent = "全部";
+      tagFilter.appendChild(allOpt);
+      TAG_OPTIONS.forEach(function (tag) {
+        const opt = document.createElement("option");
+        opt.value = tag;
+        opt.textContent = tag;
+        tagFilter.appendChild(opt);
+      });
+    }
+
+    function buildTagCheckboxes() {
+      tagCheckboxesHost.innerHTML = "";
+      TAG_OPTIONS.forEach(function (tag, i) {
+        const id = "tag-cb-" + i;
+        const wrap = document.createElement("label");
+        wrap.setAttribute("for", id);
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.id = id;
+        input.name = "note-tags";
+        input.value = tag;
+        wrap.appendChild(input);
+        wrap.appendChild(document.createTextNode(tag));
+        tagCheckboxesHost.appendChild(wrap);
+      });
+    }
+
+    function getSelectedTagsForSubmit() {
+      const selected = [];
+      tagCheckboxesHost.querySelectorAll('input[name="note-tags"]:checked').forEach(function (el) {
+        selected.push(el.value);
+      });
+      return selected;
+    }
+
+    function clearTagCheckboxes() {
+      tagCheckboxesHost.querySelectorAll('input[name="note-tags"]').forEach(function (el) {
+        el.checked = false;
+      });
+    }
+
+    buildTagFilterOptions();
+    buildTagCheckboxes();
+
+    function setStatus(message, kind) {
+      statusEl.textContent = message || "";
+      statusEl.className = kind ? kind : "";
+    }
+
+    function isConfigReady() {
+      return (
+        SUPABASE_URL.startsWith("https://") &&
+        !SUPABASE_URL.includes("你的项目") &&
+        SUPABASE_ANON_KEY.length > 20 &&
+        !SUPABASE_ANON_KEY.includes("你的 anon")
+      );
+    }
+
+    let supabaseClient = null;
+    if (typeof supabase !== "undefined" && supabase.createClient) {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    function formatTime(isoString) {
+      const d = new Date(isoString);
+      return d.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    function render(notes) {
+      list.innerHTML = "";
+      if (notes.length === 0) {
+        emptyHint.hidden = false;
+        list.hidden = true;
+        return;
+      }
+      emptyHint.hidden = true;
+      list.hidden = false;
+      for (const item of notes) {
+        const li = document.createElement("li");
+        const tagRow = document.createElement("div");
+        tagRow.className = "tag-row";
+        const tags = Array.isArray(item.tags) ? item.tags.slice().sort() : [];
+        if (tags.length) {
+          tags.forEach(function (t) {
+            const chip = document.createElement("span");
+            chip.className = "tag-chip";
+            chip.textContent = t;
+            tagRow.appendChild(chip);
+          });
+        } else {
+          const chip = document.createElement("span");
+          chip.className = "tag-chip muted";
+          chip.textContent = "无标签";
+          tagRow.appendChild(chip);
+        }
+        const timeEl = document.createElement("time");
+        timeEl.dateTime = item.at;
+        timeEl.textContent = formatTime(item.at);
+        const p = document.createElement("p");
+        p.textContent = item.text;
+        li.append(tagRow, timeEl, p);
+        list.appendChild(li);
+      }
+    }
+
+    /**
+     * 从数据库拉取笔记：按创建时间倒序，最新的在最上面；时间相同时按 id 倒序。
+     * @param {string|null} filterTag 非空时只取「至少包含该标签」的笔记（依赖列 tags text[]）
+     */
+    async function fetchNotesFromSupabase(filterTag) {
+      let query = supabaseClient
+        .from("learning_notes")
+        .select("id, created_at, text, tags")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false });
+
+      if (filterTag) {
+        query = query.contains("tags", [filterTag]);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      const rows = (data || []).map(function (row) {
+        return {
+          id: row.id,
+          at: row.created_at,
+          text: row.text,
+          tags: Array.isArray(row.tags) ? row.tags : [],
+        };
+      });
+      // 再在浏览器里排一次序，保证显示顺序与「最新在上」一致
+      rows.sort(function (a, b) {
+        const ta = new Date(a.at).getTime();
+        const tb = new Date(b.at).getTime();
+        if (tb !== ta) return tb - ta;
+        return String(b.id).localeCompare(String(a.id));
+      });
+      return rows;
+    }
+
+    async function insertNote(text, tags) {
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabaseClient.auth.getUser();
+      if (userErr || !user) {
+        throw userErr || new Error("未登录或会话已失效，请重新登录。");
+      }
+      const payload = {
+        text: text,
+        tags: tags.length ? tags : [],
+        user_id: user.id,
+      };
+      const { error } = await supabaseClient.from("learning_notes").insert(payload);
+      if (error) throw error;
+    }
+
+    function showApp(session) {
+      bootEl.hidden = true;
+      appEl.hidden = false;
+      userEmailEl.textContent = session && session.user && session.user.email ? session.user.email : "";
+    }
+
+    function goLogin() {
+      window.location.replace("login.html");
+    }
+
+    function updateDisplayFromCache() {
+      const q = noteSearch.value.trim();
+      let displayed = notesCache;
+      if (q) {
+        const lower = q.toLowerCase();
+        displayed = notesCache.filter(function (n) {
+          return (n.text || "").toLowerCase().indexOf(lower) !== -1;
+        });
+      }
+
+      const filterTag = tagFilter.value.trim();
+      if (notesCache.length === 0) {
+        emptyHint.textContent = filterTag
+          ? "该标签下还没有笔记，换一个筛选或新增一条吧。"
+          : "还没有记录，写一条试试吧。";
+      } else if (displayed.length === 0) {
+        emptyHint.textContent =
+          "没有与关键词匹配的笔记，换个词或清空搜索框试试。";
+      }
+
+      render(displayed);
+    }
+
+    async function refreshList() {
+      setStatus("加载中…", "");
+      submitBtn.disabled = true;
+      refreshBtn.disabled = true;
+      noteSearch.disabled = true;
+      try {
+        const filterTag = tagFilter.value.trim() || null;
+        const notes = await fetchNotesFromSupabase(filterTag);
+        notesCache = notes;
+        updateDisplayFromCache();
+        setStatus("", "");
+      } catch (err) {
+        console.error(err);
+        setStatus("读取失败：" + (err.message || String(err)), "error");
+        notesCache = [];
+        updateDisplayFromCache();
+      } finally {
+        submitBtn.disabled = false;
+        refreshBtn.disabled = false;
+        noteSearch.disabled = false;
+      }
+    }
+
+    refreshBtn.addEventListener("click", function () {
+      if (!isConfigReady() || !supabaseClient) {
+        setStatus("请先完成 Supabase 配置。", "error");
+        return;
+      }
+      refreshList();
+    });
+
+    tagFilter.addEventListener("change", function () {
+      if (!isConfigReady() || !supabaseClient) return;
+      refreshList();
+    });
+
+    noteSearch.addEventListener("input", function () {
+      if (!isConfigReady() || !supabaseClient) return;
+      updateDisplayFromCache();
+    });
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (!isConfigReady() || !supabaseClient) {
+        setStatus("请先在 notes.html 里填写正确的 SUPABASE_URL 和 SUPABASE_ANON_KEY。", "error");
+        return;
+      }
+
+      const text = input.value.trim();
+      if (!text) {
+        input.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      setStatus("提交中…", "");
+      try {
+        const tags = getSelectedTagsForSubmit();
+        await insertNote(text, tags);
+        input.value = "";
+        clearTagCheckboxes();
+        await refreshList();
+        setStatus("已保存。", "ok");
+        input.focus();
+      } catch (err) {
+        console.error(err);
+        setStatus("保存失败：" + (err.message || String(err)), "error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    logoutBtn.addEventListener("click", async function () {
+      logoutBtn.disabled = true;
+      try {
+        await supabaseClient.auth.signOut();
+      } catch (e) {
+        console.error(e);
+      }
+      goLogin();
+    });
+
+    (async function init() {
+      if (!isConfigReady() || !supabaseClient) {
+        bootEl.textContent = "请先在 notes.html 中填写 SUPABASE_URL 与 SUPABASE_ANON_KEY，并执行 supabase/schema.sql（含登录与 RLS）。";
+        return;
+      }
+
+      /** 邮箱确认链接会带回 ?code=…，须换会话后才能 getSession（PKCE） */
+      const authUrl = new URL(window.location.href);
+      const qErr = authUrl.searchParams.get("error");
+      const qErrDesc = authUrl.searchParams.get("error_description");
+      if (qErr) {
+        const detail = qErrDesc
+          ? decodeURIComponent(qErrDesc.replace(/\+/g, " "))
+          : qErr;
+        bootEl.textContent =
+          "确认链接无效或已过期：" +
+          detail +
+          " 请回到 login.html 重新注册或登录，并可在 Supabase → Authentication → URL Configuration → Redirect URLs 中核对是否已包含当前站点地址。";
+        authUrl.search = "";
+        window.history.replaceState({}, document.title, authUrl.pathname + authUrl.hash);
+        return;
+      }
+      if (authUrl.searchParams.get("code")) {
+        bootEl.textContent = "正在完成邮箱确认…";
+        const { error: codeErr } = await supabaseClient.auth.exchangeCodeForSession(
+          window.location.href
+        );
+        if (codeErr) {
+          bootEl.textContent =
+            "邮箱确认失败：" +
+            (codeErr.message || String(codeErr)) +
+            " 请到 Supabase 控制台 → Authentication → URL Configuration → Redirect URLs，添加你访问本站时使用的完整地址（含协议、域名、端口与路径，例如 http://127.0.0.1:5500/ 或 …/login.html、…/notes.html），保存后重新点击邮件里的确认链接。";
+          return;
+        }
+        authUrl.search = "";
+        window.history.replaceState({}, document.title, authUrl.pathname + authUrl.hash);
+      }
+
+      const {
+        data: { session },
+        error: sessionErr,
+      } = await supabaseClient.auth.getSession();
+      if (sessionErr) {
+        console.error(sessionErr);
+        bootEl.textContent = "读取登录状态失败：" + (sessionErr.message || String(sessionErr));
+        return;
+      }
+      if (!session) {
+        goLogin();
+        return;
+      }
+
+      showApp(session);
+
+      supabaseClient.auth.onAuthStateChange(function (_event, newSession) {
+        if (!newSession) {
+          goLogin();
+        } else {
+          userEmailEl.textContent = newSession.user && newSession.user.email ? newSession.user.email : "";
+        }
+      });
+
+      await refreshList();
+    })();
+  </script>
+</body>
+</html>
