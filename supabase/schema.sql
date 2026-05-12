@@ -7,7 +7,8 @@ create table if not exists public.learning_notes (
   created_at timestamptz not null default now(),
   text text not null,
   tags text[] not null default '{}',
-  user_id uuid references auth.users (id) on delete cascade
+  user_id uuid references auth.users (id) on delete cascade,
+  share_token text unique
 );
 
 -- 旧表补列
@@ -16,6 +17,9 @@ alter table public.learning_notes
 
 alter table public.learning_notes
   add column if not exists user_id uuid references auth.users (id) on delete cascade;
+
+alter table public.learning_notes
+  add column if not exists share_token text unique;
 
 -- 无法归属到账号的旧数据（匿名演示期）删除，避免策略无法收紧
 delete from public.learning_notes
@@ -43,6 +47,7 @@ drop policy if exists "learning_notes_select_anon" on public.learning_notes;
 drop policy if exists "learning_notes_insert_anon" on public.learning_notes;
 drop policy if exists "learning_notes_select_own" on public.learning_notes;
 drop policy if exists "learning_notes_insert_own" on public.learning_notes;
+drop policy if exists "learning_notes_select_by_share_token" on public.learning_notes;
 
 alter table public.learning_notes enable row level security;
 
@@ -57,3 +62,18 @@ create policy "learning_notes_insert_own"
   for insert
   to authenticated
   with check (auth.uid() = user_id);
+
+create policy "learning_notes_select_by_share_token"
+  on public.learning_notes
+  for select
+  to anon, authenticated
+  using (share_token is not null);
+
+create index if not exists learning_notes_share_token_idx
+  on public.learning_notes (share_token);
+
+comment on column public.learning_notes.share_token is '分享链接 token，为空则不可分享';
+
+grant update(share_token) on public.learning_notes to authenticated;
+
+grant select on public.learning_notes to anon;
