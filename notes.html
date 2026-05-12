@@ -234,7 +234,44 @@
     .share-btn:hover {
       background: #dbeafe;
     }
-    .share-btn.copied {
+    .share-btn.active {
+      color: #15803d;
+      background: #dcfce7;
+      border-color: #bbf7d0;
+    }
+    .share-link-container {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: #fafaf9;
+      border-radius: 6px;
+      border: 1px solid #e7e5e4;
+    }
+    .share-link-text {
+      flex: 1;
+      font-size: 0.75rem;
+      color: #44403c;
+      word-break: break-all;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .copy-btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background: #dbeafe;
+    }
+    .copy-btn.copied {
       color: #15803d;
       background: #dcfce7;
       border-color: #bbf7d0;
@@ -478,6 +515,23 @@
       return base.replace("notes.html", "share.html") + "?token=" + token;
     }
 
+    async function copyToClipboard(text, buttonEl) {
+      try {
+        await navigator.clipboard.writeText(text);
+        buttonEl.textContent = "已复制";
+        buttonEl.classList.add("copied");
+        setTimeout(() => {
+          buttonEl.textContent = "复制";
+          buttonEl.classList.remove("copied");
+        }, 2000);
+        setStatus("链接已复制到剪贴板", "ok");
+        setTimeout(() => setStatus("", ""), 2000);
+      } catch (err) {
+        setStatus("复制失败，请手动复制", "error");
+        console.error(err);
+      }
+    }
+
     async function toggleShare(noteId, currentToken, buttonEl) {
       buttonEl.disabled = true;
       const originalText = buttonEl.textContent;
@@ -496,33 +550,11 @@
           .eq("id", noteId);
         if (error) throw error;
         if (token) {
-          const url = getShareUrl(token);
-          try {
-            await navigator.clipboard.writeText(url);
-            buttonEl.textContent = "已复制";
-            buttonEl.classList.add("copied");
-            setStatus("分享链接已复制到剪贴板", "ok");
-            setTimeout(() => {
-              buttonEl.textContent = "分享中";
-              buttonEl.classList.remove("copied");
-              setStatus("", "");
-            }, 2000);
-          } catch (clipboardErr) {
-            buttonEl.textContent = "分享中";
-            buttonEl.classList.add("copied");
-            setStatus("分享链接：" + url, "ok");
-            setTimeout(() => {
-              setStatus("", "");
-            }, 5000);
-          }
+          setStatus("分享链接已生成", "ok");
         } else {
-          buttonEl.textContent = "分享";
-          buttonEl.classList.remove("copied");
           setStatus("已取消分享", "ok");
-          setTimeout(() => {
-            setStatus("", "");
-          }, 2000);
         }
+        setTimeout(() => setStatus("", ""), 2000);
         await refreshList();
       } catch (err) {
         console.error(err);
@@ -570,7 +602,7 @@
         const shareBtn = document.createElement("button");
         shareBtn.type = "button";
         shareBtn.className = "share-btn";
-        shareBtn.textContent = item.shareToken ? "分享中" : "分享";
+        shareBtn.textContent = item.shareToken ? "取消分享" : "分享";
         if (item.shareToken) {
           shareBtn.classList.add("active");
         }
@@ -578,7 +610,27 @@
           toggleShare(item.id, item.shareToken, shareBtn);
         });
         actions.appendChild(shareBtn);
-        li.append(tagRow, timeEl, p, actions);
+
+        if (item.shareToken) {
+          const shareUrl = getShareUrl(item.shareToken);
+          const linkContainer = document.createElement("div");
+          linkContainer.className = "share-link-container";
+          const linkText = document.createElement("span");
+          linkText.className = "share-link-text";
+          linkText.textContent = shareUrl;
+          linkText.title = shareUrl;
+          const copyBtn = document.createElement("button");
+          copyBtn.type = "button";
+          copyBtn.className = "copy-btn";
+          copyBtn.textContent = "复制";
+          copyBtn.addEventListener("click", function () {
+            copyToClipboard(shareUrl, copyBtn);
+          });
+          linkContainer.append(linkText, copyBtn);
+          li.append(tagRow, timeEl, p, actions, linkContainer);
+        } else {
+          li.append(tagRow, timeEl, p, actions);
+        }
         list.appendChild(li);
       }
     }
